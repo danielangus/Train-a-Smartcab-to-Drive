@@ -20,10 +20,10 @@ class LearningAgent(Agent):
         self.alpha = alpha       # Learning factor
 
         self.t = 0.					# time
-        self.prevstate = ()			# Previous state of car
-        self.prevaction = 'None'	# Previous action
-        self.prevreward = 0			# Previous reward
-        self.num_intersections = 0	# Number of intersections we go through
+        #self.prevstate = ()			# Previous state of car
+        #self.prevaction = 'None'	# Previous action
+        #self.prevreward = 0			# Previous reward
+        #self.num_intersections = 0	# Number of intersections we go through
 
 
     def reset(self, destination=None, testing=False):
@@ -36,8 +36,8 @@ class LearningAgent(Agent):
         self.t += 1.
 
         if testing == False:
-            self.epsilon =  0.98* self.epsilon
-            self.alpha = 0.95 * self.alpha
+            self.epsilon = self.epsilon - 0.005
+            self.alpha = 0.985 * self.alpha
             # self.epsilon = self.epsilon * (math.pow(self.t,2)/(math.pow(self.t+1,2)))
         	# self.epsilon = 1/math.pow(self.t,2)
         else:
@@ -105,28 +105,26 @@ class LearningAgent(Agent):
         # Set the agent state and default action
         self.state = state
         self.next_waypoint = self.planner.next_waypoint()
-        action = ''
-        
-        if self.learning == True:
-            prob = random.random()
-            if prob < self.epsilon:
-                # Give a 50/50 chance of taking a step in the waypoint direction
-                flip = random.randint(0,1)
-                if flip:
-                    i = random.randint(0,3)
-                    action = self.valid_actions[i]
-                else:
-                    action = self.next_waypoint
-            else:
-                # Reference for getting dictionary key with highest value:
-        		# http://stackoverflow.com/questions/268272/getting-key-with-maximum-value-in-dictionary
-        		action = max(self.Q[state], key=self.Q[state].get)
 
-        
-        # When not learning, choose a random action
-        # When learning, choose a random action with 'epsilon' probability
-        #   Otherwise, choose an action with the highest Q-value for the current state
- 
+        # Choose a random action
+        i = random.randint(0, 3)
+        action = self.valid_actions[i]
+        prob = random.random()
+
+        if self.learning == True and prob > self.epsilon:
+            action = random.choice([act for act in self.valid_actions if self.Q[state][act] == self.get_maxQ(state)])
+            # old random action:
+            # Reference for getting dictionary key with highest value:
+        	# http://stackoverflow.com/questions/268272/getting-key-with-maximum-value-in-dictionary
+        	#action = max(self.Q[state], key=self.Q[state].get)
+
+        # Give a 50/50 chance of taking a step in the waypoint direction
+        # flip = random.randint(0, 1)
+        # if flip:
+
+        # else:
+        #    action = self.next_waypoint
+
         return action
 
 
@@ -136,9 +134,9 @@ class LearningAgent(Agent):
             when conducting learning. """
 
         if self.learning == True:
-        	# If there is a previos action with which to calculate Q
-            if self.prevstate:
-                self.Q[self.prevstate][self.prevaction] = (1 - self.alpha)*self.Q[self.prevstate][self.prevaction] + self.alpha*(self.prevreward + self.get_maxQ(state))
+            # If there is a previos action with which to calculate Q
+            # if self.prevstate:
+            self.Q[state][action] = (1 - self.alpha)*self.Q[state][action] + self.alpha*(reward)
 
         # When learning, implement the value iteration update rule
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
@@ -158,10 +156,10 @@ class LearningAgent(Agent):
         self.learn(state, action, reward)   # Q-learn
 
         # Update previous states and that stuff
-        self.prevstate = state
-        self.prevaction = action
-        self.prevreward = reward
-        self.num_intersections += 1
+        #self.prevstate = state
+        #self.prevaction = action
+        #self.prevreward = reward
+        #self.num_intersections += 1
 
         return
         
@@ -199,7 +197,7 @@ def run():
     #   display      - set to False to disable the GUI if PyGame is enabled
     #   log_metrics  - set to True to log trial and simulation results to /logs
     #   optimized    - set to True to change the default log file name
-    sim = Simulator(env, update_delay=0.001, display = False, log_metrics=True, optimized=True)
+    sim = Simulator(env, update_delay=0.01, display = False , log_metrics=True, optimized=True)
     
     ##############
     # Run the simulator
